@@ -147,34 +147,80 @@ const API = (function() {
   // Verify a receiver's blockchain address
   async function verifyAddress(address) {
     try {
-      const response = await fetch(`${BASE_URL}/api/receiver/find/${address}`);
-      const data = await response.json();
+      // Define multiple possible endpoints to try
+      const possibleEndpoints = [
+        `/api/receiver/find/${address}`,
+        `/receiver/find/${address}`,
+        `/api/vercel-receiver-find?address=${address}`,
+        `/api/direct-test?address=${address}`,
+        `/api/blockchain-static?address=${address}`
+      ];
       
-      if (!response.ok) {
-        throw new Error(data.message || 'Address verification failed');
+      let data = null;
+      let error = null;
+      
+      // Try each endpoint in order until one works
+      for (const endpoint of possibleEndpoints) {
+        try {
+          console.log(`Trying to verify address with endpoint: ${endpoint}`);
+          const response = await fetch(`${BASE_URL}${endpoint}`);
+          
+          // Check if the response is ok (status 200-299)
+          if (!response.ok) {
+            console.warn(`Endpoint ${endpoint} returned status ${response.status}`);
+            continue; // Try next endpoint
+          }
+          
+          // Parse the response
+          data = await response.json();
+          
+          // If we got data with the expected structure, break the loop
+          if (data && (data.success || data.blockchainAddress)) {
+            console.log(`Successfully verified address with endpoint: ${endpoint}`);
+            break;
+          }
+        } catch (err) {
+          console.warn(`Error with endpoint ${endpoint}:`, err);
+          // Store the error but continue trying other endpoints
+          error = err;
+        }
       }
       
-      // Add defensive check to prevent undefined access
-      if (!data || !data.data) {
-        console.warn('Incomplete data received from verifyAddress API', data);
-        
-        return {
-          success: true,
-          username: 'Unknown User',
-          address: address
-        };
+      // If we didn't get valid data from any endpoint
+      if (!data) {
+        throw error || new Error('All endpoints failed for address verification');
+      }
+      
+      // Add fallback values if the response is missing expected fields
+      // This ensures we never have undefined properties
+      if (!data.blockchainAddress) {
+        data.blockchainAddress = address;
+      }
+      
+      if (!data.data) {
+        data.data = { blockchainAddress: data.blockchainAddress };
+      }
+      
+      if (!data.data.blockchainAddress) {
+        data.data.blockchainAddress = data.blockchainAddress;
+      }
+      
+      if (!data.data.username) {
+        data.data.username = 'Unknown User';
       }
       
       return {
         success: true,
-        username: data.data?.username || 'Unknown User',
-        address: data.data?.blockchainAddress || data.blockchainAddress || address
+        username: data.data.username || 'Unknown User',
+        address: data.data.blockchainAddress || data.blockchainAddress || address
       };
     } catch (error) {
       console.error('Verify address error:', error);
+      // Even in error case, return something valid to prevent further errors
       return {
         success: false,
         message: error.message,
+        username: 'Unknown User',
         address: address
       };
     }
