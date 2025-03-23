@@ -1,33 +1,68 @@
-// Raw response handler with no dependencies on libraries
+// Custom raw response handler for debugging and testing
+// This exports a function that can be used as a serverless endpoint
+
+// Helper to generate deterministic transaction data
+function generateTransactionData(seed) {
+  const txHash = '0x' + Array.from({length: 64}, (_, i) => {
+    return '0123456789abcdef'[(seed + i) % 16];
+  }).join('');
+  
+  const ipfsHash = 'Qm' + Array.from({length: 44}, (_, i) => {
+    return '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'[
+      (seed + i) % 58
+    ];
+  }).join('');
+  
+  return {
+    txHash,
+    ipfsHash,
+    confirmations: 24,
+    status: 'Confirmed',
+    timestamp: new Date().toISOString()
+  };
+}
+
 module.exports = (req, res) => {
-  // Set the content type explicitly
-  res.setHeader('Content-Type', 'application/json');
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  // Use address from query or request body, or generate a fallback
+  const blockchainAddress = req.query.address || 
+                            (req.body && req.body.blockchainAddress) ||
+                            '0x' + Array.from({length: 40}, () => {
+                              return '0123456789abcdef'[Math.floor(Math.random() * 16)];
+                            }).join('');
   
-  // Handle OPTIONS
-  if (req.method === 'OPTIONS') {
-    res.statusCode = 200;
-    return res.end();
-  }
+  // Generate deterministic data based on address
+  const addressSeed = parseInt(blockchainAddress.slice(-8), 16) || Date.now();
+  const txData = generateTransactionData(addressSeed);
   
-  // Create a response with blockchainAddress
+  // Generate a deterministic username
+  const username = `User_${addressSeed % 1000}`;
+  
+  // Build response object
   const responseObject = {
-    blockchainAddress: '0x9876543210abcdef9876543210abcdef98765432',
     success: true,
-    message: 'Raw response test',
+    message: 'Raw API response',
+    timestamp: new Date().toISOString(),
+    requestPath: req.url,
+    requestMethod: req.method,
+    query: req.query,
+    body: req.body,
+    blockchainAddress,
+    user: {
+      username,
+      email: `user${addressSeed % 1000}@example.com`,
+      blockchainAddress
+    },
     data: {
-      blockchainAddress: '0x9876543210abcdef9876543210abcdef98765432'
+      transaction: txData.txHash,
+      ipfsHash: txData.ipfsHash,
+      status: txData.status,
+      confirmations: txData.confirmations,
+      receiver: {
+        address: blockchainAddress,
+        username
+      }
     }
   };
   
-  // Stringify it manually
-  const responseString = JSON.stringify(responseObject);
-  
-  // Set status code
-  res.statusCode = 200;
-  
-  // Send the raw response
-  return res.end(responseString);
+  res.status(200).json(responseObject);
 }; 
