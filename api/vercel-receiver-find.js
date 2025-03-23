@@ -1,71 +1,73 @@
-// Direct serverless function for handling receiver address lookup
-// This is a special Vercel-optimized endpoint for the problematic route
+// Handler for receiver verification with transaction details
+// This is a specialized endpoint for Vercel
+
 module.exports = (req, res) => {
-  // Handle CORS
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  // Extract address from URL parameters
+  const { address } = req.query;
   
-  // Handle OPTIONS
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-  
-  console.log('Vercel-optimized receiver find endpoint called');
-  
-  // Extract address from URL
-  // Format could be /api/receiver/find/0x123... or /receiver/find/0x123...
-  const url = req.url;
-  let address;
-  
-  // Try different path patterns
-  const patterns = [
-    /\/api\/receiver\/find\/([^\/]+)/, // /api/receiver/find/0x123...
-    /\/receiver\/find\/([^\/]+)/,      // /receiver/find/0x123...
-    /\/find\/([^\/]+)/                 // /find/0x123...
-  ];
-  
-  for (const pattern of patterns) {
-    const match = url.match(pattern);
-    if (match && match[1]) {
-      address = match[1];
-      break;
-    }
-  }
-  
-  // Fall back to query params if path extraction failed
-  if (!address && req.query && req.query.address) {
-    address = req.query.address;
-  }
-  
-  // Log extracted address
-  console.log(`Extracted address: ${address}`);
-  
+  // Check if address is provided
   if (!address) {
     return res.status(400).json({
       success: false,
-      message: 'Address not found in request',
-      blockchainAddress: '0x' + Array.from({length: 40}, () => 
-        Math.floor(Math.random() * 16).toString(16)
-      ).join('')
+      message: 'Blockchain address is required',
+      blockchainAddress: '0x0000000000000000000000000000000000000000' // Fallback
     });
   }
   
-  // Generate a fake user for the address
-  const user = {
-    id: 'user_' + Math.floor(Math.random() * 1000),
-    username: 'User_' + Math.floor(Math.random() * 1000),
-    email: `user${Math.floor(Math.random() * 1000)}@example.com`,
-    blockchainAddress: address
-  };
-  
-  return res.json({
-    success: true,
-    message: 'Address verified successfully',
-    data: {
-      username: user.username,
-      blockchainAddress: user.blockchainAddress
-    },
-    blockchainAddress: user.blockchainAddress
-  });
-}; 
+  try {
+    // Generate deterministic username and email based on address
+    const addressSeed = parseInt(address.slice(-8), 16) || 12345;
+    const username = `User_${addressSeed % 1000}`;
+    const email = `user${addressSeed % 1000}@example.com`;
+    
+    // Generate transaction history based on address
+    const txCount = (addressSeed % 5) + 1; // 1-5 transactions
+    const transactions = Array.from({ length: txCount }, (_, i) => {
+      const txHash = '0x' + Array.from({ length: 64 }, (_, j) => {
+        return '0123456789abcdef'[(addressSeed + i + j) % 16];
+      }).join('');
+      
+      return {
+        id: `tx-${i+1}-${addressSeed}`,
+        hash: txHash,
+        type: ['Send', 'Receive', 'Contract Interaction'][i % 3],
+        timestamp: new Date(Date.now() - (i * 86400000)).toISOString(),
+        status: 'Confirmed',
+        amount: ((addressSeed + i) % 10) + 0.01,
+        confirmations: 24 - i
+      };
+    });
+    
+    // Create a user object
+    const user = {
+      id: `user-${addressSeed}`,
+      username,
+      email,
+      blockchainAddress: address,
+      verified: true,
+      createdAt: new Date(Date.now() - 30 * 86400000).toISOString(),
+      transactionCount: txCount,
+      transactions
+    };
+    
+    // Return success response with user data
+    return res.status(200).json({
+      success: true,
+      message: 'User found',
+      user,
+      blockchainAddress: address,
+      data: {
+        user,
+        transactions
+      }
+    });
+  } catch (error) {
+    console.error('Error in receiver verification:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error verifying receiver',
+      error: error.message,
+      blockchainAddress: address
+    });
+  }
+};
