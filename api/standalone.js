@@ -774,7 +774,10 @@ app.use('*', (req, res) => {
       'POST /blockchain/token',
       'GET /api/user',
       'GET /diagnostic/blockchain-address',
-      'GET /check-blockchain-address'
+      'GET /check-blockchain-address',
+      'GET /api/receiver/find/:address',
+      'GET /api/receiver/address',
+      'POST /api/receiver/generate'
     ],
     // Always include a blockchain address in the error response for robustness
     blockchainAddress: '0x' + Array.from({length: 40}, () => 
@@ -1045,5 +1048,79 @@ app.get('/api', (req, res) => {
     user: {
       blockchainAddress
     }
+  });
+});
+
+// Add endpoint for verifying receiver address
+app.get('/api/receiver/find/:address', (req, res) => {
+  console.log(`Verifying address: ${req.params.address}`);
+  
+  const address = req.params.address;
+  
+  if (!address) {
+    return res.status(400).json({
+      success: false,
+      message: 'Address is required',
+      blockchainAddress: '0x' + Array.from({length: 40}, () => Math.floor(Math.random() * 16).toString(16)).join('')
+    });
+  }
+  
+  // For this example, we'll just pretend the address is valid
+  // In a real implementation, you would check if this address exists in your database
+  
+  // Generate a fake user for the address
+  const user = {
+    id: 'user_' + Math.floor(Math.random() * 1000),
+    username: 'User_' + Math.floor(Math.random() * 1000),
+    email: `user${Math.floor(Math.random() * 1000)}@example.com`,
+    blockchainAddress: address
+  };
+  
+  return res.json({
+    success: true,
+    message: 'Address verified successfully',
+    data: {
+      username: user.username,
+      blockchainAddress: user.blockchainAddress
+    },
+    blockchainAddress: user.blockchainAddress
+  });
+});
+
+// Get current user's blockchain address
+app.get('/api/receiver/address', (req, res) => {
+  console.log('Getting user blockchain address');
+  
+  // Generate a blockchain address if one doesn't exist yet
+  const blockchainAddress = '0x' + Array.from({length: 40}, () => 
+    Math.floor(Math.random() * 16).toString(16)
+  ).join('');
+  
+  return res.json({
+    success: true,
+    message: 'Address retrieved successfully',
+    data: {
+      blockchainAddress
+    },
+    blockchainAddress
+  });
+});
+
+// Generate a new blockchain address
+app.post('/api/receiver/generate', (req, res) => {
+  console.log('Generating new blockchain address');
+  
+  // Generate a new blockchain address
+  const blockchainAddress = '0x' + Array.from({length: 40}, () => 
+    Math.floor(Math.random() * 16).toString(16)
+  ).join('');
+  
+  return res.json({
+    success: true,
+    message: 'New blockchain address generated',
+    data: {
+      blockchainAddress
+    },
+    blockchainAddress
   });
 }); 
