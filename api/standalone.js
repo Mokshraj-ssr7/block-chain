@@ -28,6 +28,18 @@ app.use((req, res, next) => {
   const path = req.path;
   if (path.startsWith('/api/')) {
     req.url = req.url.replace(/^\/api/, '');
+    console.log(`Path rewritten from ${path} to ${req.url}`);
+  }
+  next();
+});
+
+// Also handle potential double /api/api prefixes (common in Vercel deployments)
+app.use((req, res, next) => {
+  // Check for double api prefix
+  const path = req.path;
+  if (path.startsWith('/api/api/')) {
+    req.url = req.url.replace(/^\/api\/api/, '/api');
+    console.log(`Fixed double api prefix: ${path} → ${req.url}`);
   }
   next();
 });
@@ -1109,6 +1121,77 @@ app.get('/api/receiver/address', (req, res) => {
 // Generate a new blockchain address
 app.post('/api/receiver/generate', (req, res) => {
   console.log('Generating new blockchain address');
+  
+  // Generate a new blockchain address
+  const blockchainAddress = '0x' + Array.from({length: 40}, () => 
+    Math.floor(Math.random() * 16).toString(16)
+  ).join('');
+  
+  return res.json({
+    success: true,
+    message: 'New blockchain address generated',
+    data: {
+      blockchainAddress
+    },
+    blockchainAddress
+  });
+});
+
+// Direct route handler for receiver find (without /api prefix)
+app.get('/receiver/find/:address', (req, res) => {
+  console.log(`Verifying address (direct route): ${req.params.address}`);
+  
+  const address = req.params.address;
+  
+  if (!address) {
+    return res.status(400).json({
+      success: false,
+      message: 'Address is required',
+      blockchainAddress: '0x' + Array.from({length: 40}, () => Math.floor(Math.random() * 16).toString(16)).join('')
+    });
+  }
+  
+  // Generate a fake user for the address
+  const user = {
+    id: 'user_' + Math.floor(Math.random() * 1000),
+    username: 'User_' + Math.floor(Math.random() * 1000),
+    email: `user${Math.floor(Math.random() * 1000)}@example.com`,
+    blockchainAddress: address
+  };
+  
+  return res.json({
+    success: true,
+    message: 'Address verified successfully',
+    data: {
+      username: user.username,
+      blockchainAddress: user.blockchainAddress
+    },
+    blockchainAddress: user.blockchainAddress
+  });
+});
+
+// Get current user's blockchain address - direct route
+app.get('/receiver/address', (req, res) => {
+  console.log('Getting user blockchain address (direct route)');
+  
+  // Generate a blockchain address if one doesn't exist yet
+  const blockchainAddress = '0x' + Array.from({length: 40}, () => 
+    Math.floor(Math.random() * 16).toString(16)
+  ).join('');
+  
+  return res.json({
+    success: true,
+    message: 'Address retrieved successfully',
+    data: {
+      blockchainAddress
+    },
+    blockchainAddress
+  });
+});
+
+// Generate a new blockchain address - direct route
+app.post('/receiver/generate', (req, res) => {
+  console.log('Generating new blockchain address (direct route)');
   
   // Generate a new blockchain address
   const blockchainAddress = '0x' + Array.from({length: 40}, () => 
