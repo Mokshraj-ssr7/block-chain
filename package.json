@@ -1,0 +1,26 @@
+{
+  "name": "blockchain-file-transfer",
+  "version": "1.0.0",
+  "description": "Secure Blockchain File Transfer Application",
+  "main": "build.js",
+  "scripts": {
+    "build": "node build.js",
+    "start": "cd dist && node server.js",
+    "dev:backend": "cd src/backend && node server.js",
+    "dev:frontend": "cd src/frontend && npx http-server -p 8080"
+  },
+  "engines": {
+    "node": "18.x"
+  },
+  "dependencies": {
+    "express": "^4.17.1",
+    "cors": "^2.8.5",
+    "multer": "^1.4.5-lts.1",
+    "dotenv": "^10.0.0",
+    "crypto": "^1.0.1",
+    "path": "^0.12.7",
+    "fs": "0.0.1-security"
+  },
+  "author": "Mok-ssr7",
+  "license": "MIT"
+}

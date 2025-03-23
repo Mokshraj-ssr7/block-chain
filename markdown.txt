@@ -1,0 +1,178 @@
+============================================================
+PROJECT TITLE: Secure Blockchain File Transfer
+============================================================
+
+OVERVIEW
+--------
+This project implements a secure and decentralized system for transferring high-value data files (e.g., sensitive PDFs and photos) using blockchain technology. Instead of storing large files on-chain, the system leverages a hybrid approach by combining:
+ • Decentralized off-chain storage (e.g., IPFS) for the encrypted files.
+ • On-chain recording of file hashes for integrity verification.
+
+Additionally, the project incorporates the following functions:
+ 1. **Receiver Unique Address Generation**: Receivers can generate a unique blockchain address to share with senders.
+ 2. **User Authentication**: Sign in / sign-up functionality for new users.
+ 3. **6-Digit Passcode Authentication**: Before sending a file, the sender must provide a 6-digit passcode to ensure an extra layer of security.
+ 4. **Aesthetic Web UI**: A minimalistic black and white theme with white text in the “Black Ops One” font.
+
+This README also integrates our earlier brainstorming and project mapping conversations.
+
+------------------------------------------------------------
+FEATURES
+------------------------------------------------------------
+1. Receiver Address Generation
+   - Receivers generate a unique blockchain address.
+   - This address is shared with senders to securely route the file transfer.
+
+2. User Authentication
+   - New users can register using a sign-up form.
+   - Existing users can sign in to access the system.
+   - Authentication is managed via JWT tokens or similar session management systems.
+
+3. File Upload with Passcode Authentication
+   - Sender uploads an encrypted file.
+   - A mandatory 6-digit passcode is entered before upload.
+   - The file is encrypted, hashed, and then stored on a decentralized storage network.
+   - The corresponding file hash (along with passcode verification data) is recorded on the blockchain.
+
+4. Blockchain & Decentralized Storage Integration
+   - Off-chain storage is used for actual files (using platforms like IPFS, Storj, or Filecoin).
+   - The blockchain stores the file’s cryptographic hash, ensuring immutability and integrity.
+
+5. Web UI Design
+   - The user interface adheres to a strict black and white theme.
+   - All text appears in white using the “Black Ops One” font.
+   - The design focuses on aesthetic minimalism and ease-of-use.
+
+------------------------------------------------------------
+TECHNOLOGY STACK
+------------------------------------------------------------
+Backend:
+  • Node.js with Express.js for server-side logic.
+  • Blockchain integration using Web3.js/Ethers.js.
+  • Decentralized storage integration via an IPFS client.
+  • Database: MongoDB or PostgreSQL for user and file metadata.
+
+Frontend:
+  • HTML, CSS, and JavaScript.
+  • UI framework (optional): React.js or vanilla JS.
+  • Custom styling to enforce the black and white theme with “Black Ops One” font.
+
+Security:
+  • End-to-end encryption of files.
+  • Cryptographic hashing to verify file integrity.
+  • 6-digit passcode entry for additional transfer security.
+  • JWT (or similar) for session management and user authentication.
+
+------------------------------------------------------------
+PROJECT STRUCTURE
+------------------------------------------------------------
+/project-root
+│
+├── README.txt               # This detailed project overview and structure file.
+├── docs/
+│   ├── ProjectMap.txt       # Contains the conceptual map of the project.
+│   └── ChatConversations.txt# Logs of all related discussions and brainstorming sessions.
+│
+├── src/
+│   ├── frontend/
+│   │   ├── index.html       # Main HTML file implementing the black and white themed UI.
+│   │   ├── style.css        # CSS styles enforcing the aesthetic (black background, white text, “Black Ops One” font).
+│   │   └── script.js        # Frontend JavaScript for UI interactions and form validations.
+│   │
+│   └── backend/
+│       ├── server.js        # Entry point for the Express.js server.
+│       ├── routes/
+│       │   ├── auth.js      # Routes for sign in / sign-up functionality.
+│       │   ├── file.js      # Routes for file uploads and passcode authentication.
+│       │   └── receiver.js  # Routes for generating and managing receiver addresses.
+│       │
+│       ├── models/
+│       │   ├── user.js      # User schema and model.
+│       │   └── file.js      # File metadata schema and model.
+│       │
+│       └── utils/
+│           ├── encryption.js  # Functions for file encryption/decryption and passcode verification.
+│           ├── blockchain.js  # Functions for interacting with the blockchain (e.g., writing file hashes).
+│           └── passcode.js    # Functions to generate and verify the 6-digit passcodes.
+│
+└── package.json             # Node.js dependencies and project configuration.
+
+------------------------------------------------------------
+INSTALLATION & SETUP
+------------------------------------------------------------
+1. Clone the repository:
+   git clone <repository-url>
+
+2. Navigate to the backend folder and install dependencies:
+   cd src/backend
+   npm install
+
+3. Configure Environment Variables:
+   - Create a .env file (or use your preferred configuration method) to set up:
+     • Blockchain endpoint (e.g., Infura or local node)
+     • IPFS gateway URL
+     • JWT secret key
+     • Database connection string
+
+4. Start the Server:
+   npm start
+
+5. Open the Frontend:
+   - Open the index.html file in your browser to view the UI.
+
+------------------------------------------------------------
+DETAILED FUNCTIONALITY DESCRIPTION
+------------------------------------------------------------
+1. **User Authentication**
+   - **Sign Up:** New users register by entering their email, username, and password.
+   - **Sign In:** Registered users log in to access the secure file transfer features.
+   - **Session Management:** Implemented via JWT tokens for secure sessions.
+
+2. **Receiver Unique Address Generation**
+   - **Address Creation:** Receivers can generate a new blockchain address through a dedicated route (receiver.js).
+   - **Usage:** This unique address is then provided to the sender to ensure files are sent to the correct destination.
+
+3. **File Upload with 6-Digit Passcode**
+   - **Passcode Entry:** Before uploading, the sender enters a 6-digit passcode.
+   - **Encryption & Hashing:** The file is encrypted, hashed, and then stored on a decentralized network.
+   - **Blockchain Recording:** The file’s hash, along with the passcode verification data, is stored on the blockchain to guarantee integrity.
+
+4. **Blockchain & Decentralized Storage Integration**
+   - **Off-Chain Storage:** Files are stored on a decentralized storage platform (e.g., IPFS).
+   - **On-Chain Logging:** Only the cryptographic hash of the file is stored on the blockchain, ensuring transparency and tamper-evidence.
+
+5. **Web UI Aesthetic**
+   - **Theme:** The UI strictly uses a black and white color palette.
+   - **Font:** All text is rendered in white using the “Black Ops One” font.
+   - **Design:** Minimalistic, modern design focusing on clarity and user experience.
+
+------------------------------------------------------------
+APPENDIX: CHAT CONVERSATIONS & PROJECT MAP
+------------------------------------------------------------
+- **ChatConversations.txt**
+  Contains all our previous discussions on blockchain technology and the detailed breakdown of secure file transfer methodologies.
+  
+- **ProjectMap.txt**
+  Includes a visual and conceptual mapping of the project components such as:
+    • Decentralized storage
+    • Encryption and secure key management
+    • Blockchain as an immutable ledger
+    • Anonymity and privacy enhancements
+    • Smart contract-based automation
+
+Both files are stored in the docs/ folder to provide context and reference for the project development.
+
+------------------------------------------------------------
+CURSOR AI COMPATIBILITY
+------------------------------------------------------------
+- The project structure is modular and well-documented, ensuring compatibility with Cursor AI.
+- Clear file and folder naming conventions facilitate easy navigation and code generation.
+- Each functionality (authentication, file handling, blockchain interaction) is separated into dedicated modules.
+
+------------------------------------------------------------
+CREDITS & LICENSE
+------------------------------------------------------------
+- This project is the result of collaborative brainstorming sessions and research on blockchain technology.
+- Please specify your chosen open-source license (e.g., MIT License) here.
+
+============================================================
