@@ -5,7 +5,10 @@
   "installCommand": "npm install",
   "rewrites": [
     { "source": "/api", "destination": "/api/standalone" },
-    { "source": "/api/(.*)", "destination": "/api/standalone" }
+    { "source": "/api/(.*)", "destination": "/api/standalone" },
+    { "source": "/receiver/find/:address", "destination": "/api/standalone" },
+    { "source": "/receiver/address", "destination": "/api/standalone" },
+    { "source": "/receiver/generate", "destination": "/api/standalone" }
   ],
   "headers": [
     {
@@ -19,6 +22,30 @@
   ],
   "functions": {
     "api/standalone.js": {
+      "memory": 1024,
+      "maxDuration": 10
+    },
+    "api/direct-test.js": {
+      "memory": 1024,
+      "maxDuration": 10
+    },
+    "api/blockchain-test.js": {
+      "memory": 1024,
+      "maxDuration": 10
+    },
+    "api/blockchain-static.js": {
+      "memory": 1024,
+      "maxDuration": 10
+    },
+    "api/raw-response.js": {
+      "memory": 1024,
+      "maxDuration": 10
+    },
+    "api/last-resort.js": {
+      "memory": 1024,
+      "maxDuration": 10
+    },
+    "api/fix-frontend.js": {
       "memory": 1024,
       "maxDuration": 10
     }
