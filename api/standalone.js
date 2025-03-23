@@ -252,13 +252,49 @@ app.post('/files/upload', authenticate, (req, res) => {
   // In a real implementation, this would handle file uploads
   // For demo purposes, we'll just create a record
   
+  // Create a deterministic file ID based on timestamp
+  const fileId = Date.now().toString();
+  
+  // Generate deterministic IPFS hash and blockchain transaction based on file ID
+  const fileIdSeed = parseInt(fileId.toString().slice(-8)) || Date.now();
+  const ipfsHash = 'Qm' + Array.from({length: 44}, (_, i) => {
+    // Use deterministic values based on fileId and position
+    return '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'[
+      (fileIdSeed + i) % 58
+    ];
+  }).join('');
+  
+  const txHash = '0x' + Array.from({length: 64}, (_, i) => {
+    // Use deterministic hex values based on fileId and position 
+    return '0123456789abcdef'[(fileIdSeed + i) % 16];
+  }).join('');
+  
+  // Use receiver address from request or generate one
+  const receiverAddress = req.body.receiverAddress || ('0x' + Array.from({length: 40}, (_, i) => {
+    return '0123456789abcdef'[(fileIdSeed + i) % 16];
+  }).join(''));
+  
+  // Get receiver details deterministically
+  const receiverSeed = parseInt(receiverAddress.slice(-8), 16);
+  const receiverUsername = `User_${receiverSeed % 1000}`;
+  
   const newFile = {
-    id: Date.now().toString(),
-    name: `sample-file-${Date.now()}.txt`,
-    size: 1024,
+    id: fileId,
+    name: req.body.filename || `sample-file-${fileId}.txt`,
+    size: req.body.size || 1024,
     senderId: req.userId,
-    receiverId: '1', // Hardcoded for demo
-    uploadedAt: new Date().toISOString()
+    senderAddress: req.user.blockchainAddress,
+    receiverId: receiverAddress,
+    receiverAddress: receiverAddress,
+    uploadedAt: new Date().toISOString(),
+    ipfsHash: ipfsHash,
+    blockchainTransaction: txHash,
+    status: 'Confirmed',
+    confirmations: 24,
+    receiver: {
+      address: receiverAddress,
+      username: receiverUsername
+    }
   };
   
   files.push(newFile);
@@ -266,7 +302,14 @@ app.post('/files/upload', authenticate, (req, res) => {
   res.status(201).json({
     success: true,
     message: 'File uploaded successfully',
-    file: newFile
+    file: newFile,
+    data: {
+      file: newFile,
+      ipfsHash: newFile.ipfsHash,
+      blockchainTransaction: newFile.blockchainTransaction,
+      receiver: newFile.receiver
+    },
+    blockchainAddress: req.user.blockchainAddress
   });
 });
 
@@ -1077,14 +1120,16 @@ app.get('/api/receiver/find/:address', (req, res) => {
     });
   }
   
-  // For this example, we'll just pretend the address is valid
-  // In a real implementation, you would check if this address exists in your database
+  // Generate a deterministic username based on the address
+  // This ensures the same address always gets the same username
+  const addressSeed = parseInt(address.slice(-8), 16);
+  const username = `User_${addressSeed % 1000}`;
   
-  // Generate a fake user for the address
+  // For this example, we'll create consistent data based on the address
   const user = {
-    id: 'user_' + Math.floor(Math.random() * 1000),
-    username: 'User_' + Math.floor(Math.random() * 1000),
-    email: `user${Math.floor(Math.random() * 1000)}@example.com`,
+    id: 'user_' + (addressSeed % 1000),
+    username: username,
+    email: `user${addressSeed % 1000}@example.com`,
     blockchainAddress: address
   };
   
@@ -1151,11 +1196,16 @@ app.get('/receiver/find/:address', (req, res) => {
     });
   }
   
-  // Generate a fake user for the address
+  // Generate a deterministic username based on the address
+  // This ensures the same address always gets the same username
+  const addressSeed = parseInt(address.slice(-8), 16);
+  const username = `User_${addressSeed % 1000}`;
+  
+  // For this example, we'll create consistent data based on the address
   const user = {
-    id: 'user_' + Math.floor(Math.random() * 1000),
-    username: 'User_' + Math.floor(Math.random() * 1000),
-    email: `user${Math.floor(Math.random() * 1000)}@example.com`,
+    id: 'user_' + (addressSeed % 1000),
+    username: username,
+    email: `user${addressSeed % 1000}@example.com`,
     blockchainAddress: address
   };
   
@@ -1205,5 +1255,142 @@ app.post('/receiver/generate', (req, res) => {
       blockchainAddress
     },
     blockchainAddress
+  });
+});
+
+// Get file details - enhanced with blockchain info
+app.get('/files/detail/:fileId', authenticate, (req, res) => {
+  console.log(`Getting file details for: ${req.params.fileId}`);
+  
+  // Find the file by ID
+  const file = files.find(f => f.id === req.params.fileId);
+  
+  if (!file) {
+    return res.status(404).json({
+      success: false,
+      message: 'File not found',
+      blockchainAddress: req.user?.blockchainAddress || '0x' + Array.from({length: 40}, () => 
+        Math.floor(Math.random() * 16).toString(16)
+      ).join('')
+    });
+  }
+  
+  // Generate deterministic IPFS hash and blockchain transaction based on file ID
+  const fileIdSeed = parseInt(file.id.toString().slice(-8)) || Date.now();
+  const ipfsHash = 'Qm' + Array.from({length: 44}, (_, i) => {
+    // Use deterministic values based on fileId and position
+    return '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'[
+      (fileIdSeed + i) % 58
+    ];
+  }).join('');
+  
+  const txHash = '0x' + Array.from({length: 64}, (_, i) => {
+    // Use deterministic hex values based on fileId and position 
+    return '0123456789abcdef'[(fileIdSeed + i) % 16];
+  }).join('');
+  
+  // Generate receiver data deterministically
+  let receiverAddress = file.receiverAddress;
+  if (!receiverAddress) {
+    receiverAddress = '0x' + Array.from({length: 40}, (_, i) => {
+      return '0123456789abcdef'[(fileIdSeed + i) % 16];
+    }).join('');
+  }
+  
+  // Deterministic receiver details
+  const receiverSeed = parseInt(receiverAddress.slice(-8), 16);
+  const receiverUsername = `User_${receiverSeed % 1000}`;
+  
+  // Create an enhanced response with blockchain details
+  res.json({
+    success: true,
+    file: {
+      ...file,
+      ipfsHash: ipfsHash,
+      blockchainTransaction: txHash,
+      receiver: {
+        address: receiverAddress,
+        username: receiverUsername
+      },
+      blockchainStatus: 'Confirmed',
+      confirmations: 24
+    },
+    blockchainAddress: req.user.blockchainAddress
+  });
+});
+
+// Get transaction history for a file
+app.get('/blockchain/transactions/:fileId', authenticate, (req, res) => {
+  console.log(`Getting blockchain transactions for file: ${req.params.fileId}`);
+  
+  const { fileId } = req.params;
+  
+  // Generate deterministic transaction data based on file ID
+  const fileIdSeed = parseInt(fileId.toString().slice(-8)) || Date.now();
+  
+  // Create a main transaction hash
+  const mainTxHash = '0x' + Array.from({length: 64}, (_, i) => {
+    return '0123456789abcdef'[(fileIdSeed + i) % 16];
+  }).join('');
+  
+  // Generate 2-3 transactions related to this file
+  const transactionCount = (fileIdSeed % 2) + 2; // 2 or 3 transactions
+  const transactions = [];
+  
+  for (let i = 0; i < transactionCount; i++) {
+    const timestamp = new Date();
+    timestamp.setHours(timestamp.getHours() - i * 2); // Spread out over time
+    
+    transactions.push({
+      hash: i === 0 ? mainTxHash : '0x' + Array.from({length: 64}, (_, j) => {
+        return '0123456789abcdef'[(fileIdSeed + i + j) % 16];
+      }).join(''),
+      type: i === 0 ? 'IPFS Storage' : (i === 1 ? 'Access Grant' : 'Verification'),
+      status: 'Confirmed',
+      timestamp: timestamp.toISOString(),
+      block: 12345000 + fileIdSeed + i,
+      gas: 21000 + (i * 5000),
+      confirmations: 24 - (i * 4)
+    });
+  }
+  
+  res.json({
+    success: true,
+    fileId: fileId,
+    transactions: transactions,
+    blockchainAddress: req.user.blockchainAddress
+  });
+});
+
+// Get IPFS details for a file
+app.get('/ipfs/detail/:fileId', authenticate, (req, res) => {
+  console.log(`Getting IPFS details for file: ${req.params.fileId}`);
+  
+  const { fileId } = req.params;
+  
+  // Generate deterministic IPFS data based on file ID
+  const fileIdSeed = parseInt(fileId.toString().slice(-8)) || Date.now();
+  
+  // Create a stable IPFS hash for this file
+  const ipfsHash = 'Qm' + Array.from({length: 44}, (_, i) => {
+    return '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'[
+      (fileIdSeed + i) % 58
+    ];
+  }).join('');
+  
+  // Mock gateway URLs
+  const gateway1 = `https://ipfs.io/ipfs/${ipfsHash}`;
+  const gateway2 = `https://gateway.ipfs.io/ipfs/${ipfsHash}`;
+  const gateway3 = `https://cloudflare-ipfs.com/ipfs/${ipfsHash}`;
+  
+  res.json({
+    success: true,
+    fileId: fileId,
+    ipfsHash: ipfsHash,
+    size: 1024 * (1 + (fileIdSeed % 1024)), // Random size between 1KB and 1MB
+    created: new Date().toISOString(),
+    pinned: true,
+    gateways: [gateway1, gateway2, gateway3],
+    blockchainAddress: req.user.blockchainAddress
   });
 }); 
